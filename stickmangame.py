@@ -33,7 +33,8 @@ class Sprite:
     
     def move(self):
         sx, sy = self.speed
-        self.canvas.move(self.obj, sx, sy)
+        self.canvas.move(self.obj, sx, -sy)
+        self.coords = self.canvas.coords(self.obj)
 
 
 class Stickman(Sprite):
@@ -66,6 +67,8 @@ class Stickman(Sprite):
         if key == "Right":
             self.speed = (SPD, sy)
             self.dir = 1
+        if key == "Up":
+            self.speed = (sx, 20)     
 
     def unforce(self, event):
         key = event.keysym
@@ -81,8 +84,17 @@ class Stickman(Sprite):
     
     def move(self):
         super().move()
+        sx, sy = self.speed
+        self.speed = (sx, sy - 1)
+        self.check()    
         self.frame += 0.5
         self.animate()
+
+    def check(self):
+        while(self.coords[1] > H - 15):
+            self.speed = (self.speed[0], 0)
+            self.coords = (self.coords[0], self.coords[1] - 1)
+        self.canvas.coords(self.obj, self.coords) 
 
     def animate(self):
         if self.dir == None:
