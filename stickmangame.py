@@ -30,9 +30,10 @@ class Sprite:
     
     def move(self):
         self.canvas.move(self.obj, self.speedx, self.speedy)
+        
 
 class Stickman(Sprite):
-    def __init__(self, g: Game, x=W / 2, y=H / 2, speedx=0, speedy=0) -> None:
+    def __init__(self, g: Game, x = W / 2, y = H / 2, speedx=0, speedy=0) -> None:
         super().__init__(g, x, y, speedx, speedy)
         self.costumes = [
             PhotoImage(file="figure-L1.png"),
@@ -50,16 +51,22 @@ class Stickman(Sprite):
         if key == "Right":
             self.speedx = SPD     
             self.switchcostume(1)       
+        if key == "Up":
+            self.speedy = -20    
 
     def unforce(self, event):
         key = event.keysym
         if key == "Left":
             self.speedx = 0            
         if key == "Right":
-            self.speedx = 0                 
+            self.speedx = 0           
 
     def switchcostume(self, num):
-        self.canvas.itemconfig(self.obj, image = self.costumes[num])       
+        self.canvas.itemconfig(self.obj, image = self.costumes[num]) 
+
+    def move(self):
+        super().move()
+        self.speedy += 1   
 
 g = Game()
 while g.run:
