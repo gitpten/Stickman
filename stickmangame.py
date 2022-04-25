@@ -1,8 +1,7 @@
-from email.mime import image
 from math import ceil
-from telnetlib import GA
 from time import sleep
 from tkinter import Canvas, PhotoImage, Tk, mainloop
+from turtle import speed
 
 W = 500
 H = 500
@@ -18,7 +17,7 @@ class Game:
 
     def tick(self):
         for sprite in self.sprites:
-            sprite.move()
+            sprite.update()
             self.canvas.update()
 
 
@@ -31,10 +30,14 @@ class Sprite:
         self.speed = speed
         self.obj = None
     
+    def update(self):
+        self.move()
+
     def move(self):
         sx, sy = self.speed
-        self.canvas.move(self.obj, sx, -sy)
-        self.coords = self.canvas.coords(self.obj)
+        x, y = self.coords
+        self.coords = (x + sx, y - sy)
+        self.canvas.coords(self.obj, self.coords[0], self.coords[1])
 
 
 class Stickman(Sprite):
@@ -44,7 +47,6 @@ class Stickman(Sprite):
         self.stand_img = PhotoImage(file=f"Stand.png")
         x, y = self.coords
         self.obj = self.canvas.create_image(x, y, image=self.stand_img)
-        self.dir = None
         self.frame = 0
         self.canvas.bind_all("<KeyPress>", self.force)
         self.canvas.bind_all("<KeyRelease>", self.unforce)
@@ -62,11 +64,9 @@ class Stickman(Sprite):
         key = event.keysym
         sx, sy = self.speed
         if key == "Left":
-            self.speed = (-SPD, sy)
-            self.dir = 0            
+            self.speed = (-SPD, sy)     
         if key == "Right":
             self.speed = (SPD, sy)
-            self.dir = 1
         if key == "Up":
             self.speed = (sx, 20)     
 
@@ -76,18 +76,16 @@ class Stickman(Sprite):
         if key == "Left":
             self.speed = (0, sy)
             self.frame = 0
-            self.dir = None
         if key == "Right":
             self.speed = (0, sy)
             self.frame = 0
-            self.dir = None
     
-    def move(self):
-        super().move()
+    def update(self):
+        super().update()
         sx, sy = self.speed
         self.speed = (sx, sy - 1)
         self.check()    
-        self.frame += 0.5
+        self.frame += 1
         self.animate()
 
     def check(self):
@@ -97,10 +95,10 @@ class Stickman(Sprite):
         self.canvas.coords(self.obj, self.coords) 
 
     def animate(self):
-        if self.dir == None:
+        if self.speed[0] == 0:
             self.canvas.itemconfig(self.obj, image=self.stand_img)
             return
-        num = int(self.frame) % 15 + self.dir * 15 
+        num = self.frame % 15 if self.speed[0] < 0 else self.frame % 15 + 15
         self.canvas.itemconfig(self.obj, image=self.images[num])
 
 
