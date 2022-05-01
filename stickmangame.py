@@ -102,20 +102,12 @@ class Stickman(Sprite):
         if self.speedx == 0:
             self.switchcostume(-1)
             return
-        if self.speedx < 0:
-            if self.flying and self.speedy > 0:
-                self.switchcostume(-5)
-            elif self.flying:
-                self.switchcostume(-4)
-            else:
-                self.switchcostume(self.frame % 15)
+        right = self.speedx > 0
+        down = self.speedy < 0
+        if self.flying:
+            self.switchcostume(-5 + 2 * right + down)
         else:
-            if self.flying and self.speedy > 0:
-                self.switchcostume(-3)
-            elif self.flying:
-                self.switchcostume(-2)
-            else:
-                self.switchcostume(self.frame % 15 + 15)
+            self.switchcostume(self.frame % 15 + 15 * right)
     
     def check(self):
         while self.y > H - 15:
