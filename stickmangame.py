@@ -1,8 +1,5 @@
-from operator import truth
 from time import sleep
 from tkinter import Canvas, PhotoImage, Tk, mainloop
-
-from pkg_resources import get_platform
 
 
 W, H = 500, 500
