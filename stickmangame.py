@@ -1,7 +1,16 @@
+<<<<<<< HEAD
 from time import sleep
 from tkinter import Canvas, PhotoImage, Tk, mainloop
 from turtle import right, speed
 
+=======
+from operator import truth
+from time import sleep
+from tkinter import Canvas, PhotoImage, Tk, mainloop
+
+from pkg_resources import get_platform
+
+>>>>>>> prepare
 
 W, H = 500, 500
 SPD = 5
@@ -12,13 +21,30 @@ class Game:
         self.canvas = Canvas(self.win, width=W, height=H)
         self.canvas.pack()
         self.run = True
+<<<<<<< HEAD
         self.sprites = self.get_plathforms() + [Stickman(self)]
+=======
+        self.level = 1
+        self.sprites = self.get_platforms() + [Stickman(self)]
+    
+    def get_platforms(self):
+        ps = []
+        if self.level == 1:
+            ps.append(Plathform(self, 2, 1, width=2))
+            ps.append(Plathform(self, 3, 4))
+            ps.append(Plathform(self, 1, 5, width=2))
+            ps.append(Plathform(self, 6, 1))
+            ps.append(Plathform(self, 5, 8, width=3))
+            ps.append(Plathform(self, 3, 2, width=2))
+        return ps
+>>>>>>> prepare
     
     def tick(self):
         for sprite in self.sprites:
             sprite.update()
         self.canvas.update()
         sleep(0.02)
+<<<<<<< HEAD
     
     def get_plathforms(self):
         pp = []
@@ -28,6 +54,9 @@ class Game:
         pp.append(Plathform(self, 7, 4, width=2))
         pp.append(Plathform(self, 2, 2, width=3))
         return pp
+=======
+
+>>>>>>> prepare
 
 class Sprite:
     def __init__(self, g: Game, x = W / 2, y = H / 2, speedx = 0, speedy = 0) -> None:
@@ -46,11 +75,19 @@ class Sprite:
         self.canvas.coords(self.obj, self.x, self.y)
 
 class Plathform(Sprite):
+<<<<<<< HEAD
     def __init__(self, g: Game, x, y, speedx=0, speedy=0, width=1) -> None:
         super().__init__(g, x * W / 10, y * H / 10, speedx, speedy)   
         self.img = PhotoImage(file=f"P{width}.png")
         self.obj = self.canvas.create_image(self.x, self.y, image = self.img, anchor='center')
         self.width = width * 30
+=======
+    def __init__(self, g: Game, x, y, speedx=0, speedy=0, width = 1) -> None:
+        super().__init__(g, x * W / 10, y * H / 10, speedx, speedy) 
+        self.img = PhotoImage(file=f"P{width}.png") 
+        self.obj = self.canvas.create_image(self.x, self.y, image = self.img, anchor='center')
+        self.width = 30 * width   
+>>>>>>> prepare
 
 class Stickman(Sprite):
     def __init__(self, g: Game, x = W / 2, y = H / 2, speedx=0, speedy=0) -> None:
@@ -80,7 +117,11 @@ class Stickman(Sprite):
         imgs.append(PhotoImage(file=f"LJ1.png"))
         imgs.append(PhotoImage(file=f"LJ2.png"))
         imgs.append(PhotoImage(file=f"RJ1.png"))
+<<<<<<< HEAD
         imgs.append(PhotoImage(file=f"RJ2.png"))        
+=======
+        imgs.append(PhotoImage(file=f"RJ2.png"))
+>>>>>>> prepare
         imgs.append(PhotoImage(file=f"Stand.png"))
         return imgs
     
@@ -90,10 +131,16 @@ class Stickman(Sprite):
             self.speedx = -SPD
         if key == "Right":
             self.speedx = SPD   
+<<<<<<< HEAD
         if key == "Up":
             if not self.flying:
                 self.flying = True
                 self.speedy = 20 
+=======
+        if key == "Up" and not self.flying:
+            self.speedy = 20 
+            self.flying = True
+>>>>>>> prepare
 
     def unforce(self, event):
         key = event.keysym
@@ -118,7 +165,10 @@ class Stickman(Sprite):
         if self.speedx == 0:
             self.switchcostume(-1)
             return
+<<<<<<< HEAD
         
+=======
+>>>>>>> prepare
         right = self.speedx > 0
         down = self.speedy < 0
         if self.flying:
@@ -134,6 +184,7 @@ class Stickman(Sprite):
         self.canvas.coords(self.obj, self.x, self.y)
     
     def collide(self):
+<<<<<<< HEAD
         for plathform in self.game.sprites:
             if plathform == self:
                 continue
@@ -142,6 +193,13 @@ class Stickman(Sprite):
             left = plathform.x - plathform.width / 2
             right = plathform.x + plathform.width / 2
             if mytop < plathform.y < mybottom and left < self.x < right:
+=======
+        for sprite in self.game.sprites:
+            if sprite == self:
+                 continue
+            if self.speedy <= 0 and self.y + 15 > sprite.y > self.y - 15 \
+                and sprite.x - sprite.width / 2 < self.x < sprite.x + sprite.width / 2:
+>>>>>>> prepare
                 return True
         return False
 
