@@ -10,6 +10,7 @@ class Game:
         self.win = Tk()
         self.canvas = Canvas(self.win, width=W, height=H)
         self.canvas.pack()
+        self.level = 1
         self.run = True
         self.sprites = self.get_plathforms() + [Stickman(self)]
     
@@ -21,12 +22,35 @@ class Game:
     
     def get_plathforms(self):
         pp = []
-        pp.append(Plathform(self, 2, 8))
-        pp.append(Plathform(self, 8, 7))
-        pp.append(Plathform(self, 4, 5, width=2))
-        pp.append(Plathform(self, 7, 4, width=2))
-        pp.append(Plathform(self, 2, 2, width=3))
+        if self.level == 1:
+            pp.append(Plathform(self, 2, 8))
+            pp.append(Plathform(self, 8, 7))
+            pp.append(Plathform(self, 4, 5, width=2))
+            pp.append(Plathform(self, 7, 4, width=2))
+            pp.append(Plathform(self, 2, 2, width=3))
+        elif self.level == 2:
+            pp.append(Plathform(self, 8, 4, width=2))
+            pp.append(Plathform(self, 7, 8))
+            pp.append(Plathform(self, 3, 2, width=3))
+            pp.append(Plathform(self, 4, 7, width=2))
+            pp.append(Plathform(self, 1, 2))                
+        pp.insert(0, Door(pp[-1]))
         return pp
+    
+    def newlevel(self):
+        if self.level == 2:
+            self.gameover()
+            return
+        self.level += 1
+        self.canvas.delete('all')
+        self.sprites = self.get_plathforms() + [Stickman(self)]
+    
+    def gameover(self):
+        self.run = False
+        self.canvas.create_text(W / 2, H / 2, font = ('Arial', 30), text = 'Game over', \
+            anchor='center')
+
+
 
 class Sprite:
     def __init__(self, g: Game, x = W / 2, y = H / 2, speedx = 0, speedy = 0) -> None:
@@ -44,12 +68,24 @@ class Sprite:
         self.y -= self.speedy
         self.canvas.coords(self.obj, self.x, self.y)
 
+
+
 class Plathform(Sprite):
     def __init__(self, g: Game, x, y, speedx=0, speedy=0, width=1) -> None:
         super().__init__(g, x * W / 10, y * H / 10, speedx, speedy)   
         self.img = PhotoImage(file=f"P{width}.png")
         self.obj = self.canvas.create_image(self.x, self.y, image = self.img, anchor='center')
         self.width = width * 30
+
+
+class Door(Sprite):
+    def __init__(self, p: Plathform) -> None:
+        super().__init__(p.game, p.x, p.y, 0, 0)
+        self.img_opened = PhotoImage(file=f"door2.png")
+        self.img_closed = PhotoImage(file=f"door1.png")
+        self.obj = self.canvas.create_image(self.x, self.y, image = self.img_opened, anchor='s')
+        self.width = 30
+
 
 class Stickman(Sprite):
     def __init__(self, g: Game, x = W / 2, y = H / 2, speedx=0, speedy=0) -> None:
@@ -126,6 +162,9 @@ class Stickman(Sprite):
             self.switchcostume(self.frame % 15 + 15 * right)
     
     def check(self):
+        if type(self.collide()) is Door:
+            self.game.newlevel()
+            return
         while self.collide() or self.y > H - 15:
             self.speedy = 0
             self.flying = False
@@ -133,15 +172,15 @@ class Stickman(Sprite):
         self.canvas.coords(self.obj, self.x, self.y)
     
     def collide(self):
-        for plathform in self.game.sprites:
-            if plathform == self:
+        for sprite in self.game.sprites:
+            if sprite == self:
                 continue
             mytop = self.y - 15
             mybottom = self.y + 15
-            left = plathform.x - plathform.width / 2
-            right = plathform.x + plathform.width / 2
-            if mytop < plathform.y < mybottom and left < self.x < right:
-                return True
+            left = sprite.x - sprite.width / 2
+            right = sprite.x + sprite.width / 2
+            if self.speedy <= 0 and mytop < sprite.y < mybottom and left < self.x < right:
+                return sprite
         return False
 
 g = Game()
