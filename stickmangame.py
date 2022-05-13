@@ -70,8 +70,9 @@ class Game:
 
 
 class Sprite:
-    def __init__(self, g: Game, x = W / 2, y = H / 2, speedx = 0, speedy = 0) -> None:
+    def __init__(self, g: Game, x = W / 2, y = H / 2, speedx = 0, speedy = 0, width = 30) -> None:
         self.game = g
+        self.width = width
         self.canvas = g.canvas
         self.x, self.y = x, y
         self.speedx, self.speedy = speedx, speedy
@@ -108,6 +109,18 @@ class FallingSprite(Sprite):
             self.flying = False
             self.y -= 1
         self.canvas.coords(self.obj, self.x, self.y) 
+
+    def collide(self):
+        for sprite in self.game.sprites:
+            if sprite == self:
+                continue
+            mytop = self.y - 15
+            mybottom = self.y + 15
+            left = sprite.x - sprite.width / 2
+            right = sprite.x + sprite.width / 2
+            if self.speedy <= 0 and mytop < sprite.y < mybottom and left < self.x < right:
+                return sprite 
+        return False
 
 
 class Plathform(Sprite):
@@ -247,15 +260,12 @@ class Stickman(FallingSprite):
             self.switchcostume(self.frame % 15 + 15 * right)
 
     def collide(self):
-        for sprite in self.game.sprites:
-            if type(sprite) is Stickman:
-                continue
-            mytop = self.y - 15
-            mybottom = self.y + 15
-            left = sprite.x - sprite.width / 2
-            right = sprite.x + sprite.width / 2
-            if self.speedy <= 0 and mytop < sprite.y < mybottom and left < self.x < right:
-                return sprite.collide_action()
+        sprite = super().collide()
+        if sprite:
+            return sprite.collide_action()
+        return False
+    
+    def collide_action(self):
         return False
     
     def kill(self):
