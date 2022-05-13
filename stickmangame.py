@@ -43,6 +43,7 @@ class Game:
             pp.append(Plathform(self, 2, 2, width=3))
             pp.insert(0, Door(pp[-1]))
         elif self.level == 2:
+            pp.append(Bug(self))
             pp.append(Plathform(self, 8, 4, width=2))
             pp.append(PlathformKiller(self, 7, 8))
             pp.append(Plathform(self, 3, 2, width=3))
@@ -87,6 +88,26 @@ class Sprite:
     def collide_action(self):
         return True
 
+
+
+class FallingSprite(Sprite):
+    def __init__(self, g: Game, x = W / 2, y = H / 2, speedx=0, speedy=0) -> None:
+        super().__init__(g, x, y, speedx, speedy)
+        self.flying = True
+
+    def update(self):
+        super().update()  
+        self.speedy -= 1  
+        if self.speedy < -1:
+             self.flying = True         
+        self.check()  
+    
+    def check(self):
+        while self.collide() or self.y > H - 15:
+            self.speedy = 0
+            self.flying = False
+            self.y -= 1
+        self.canvas.coords(self.obj, self.x, self.y) 
 
 
 class Plathform(Sprite):
@@ -142,12 +163,23 @@ class Door(Sprite):
             return False
         return False
 
-class Stickman(Sprite):
+
+
+class Bug(FallingSprite):
+    def __init__(self, g: Game, x=W - 20, y=20, speedx=-5, speedy=0) -> None:
+        super().__init__(g, x, y, speedx, speedy)
+        self.img = PhotoImage(file=f"bug.png")
+        self.obj = self.canvas.create_image(self.x, self.y, image = self.img, anchor='center')
+    
+    def collide_action(self):
+        self.game.sprites[-1].kill()
+
+
+class Stickman(FallingSprite):
     def __init__(self, g: Game, x = W / 2, y = H / 2, speedx=0, speedy=0) -> None:
         super().__init__(g, x, y, speedx, speedy)
         self.costumes = self.get_costumes()
         self.frame = 0
-        self.flying = True
         self.obj = self.canvas.create_image(self.x, self.y, image = self.costumes[-1], anchor='center')
         self.canvas.bind_all("<KeyPress>", self.force)
         self.canvas.bind_all("<KeyRelease>", self.unforce)
@@ -159,7 +191,6 @@ class Stickman(Sprite):
         for i in range(num):
             img.append(PhotoImage(file=f"R{i + 1}.png"))
         return img
-
     
     def get_costumes(self):
         imgs = []
@@ -200,10 +231,6 @@ class Stickman(Sprite):
 
     def update(self):
         super().update()  
-        self.speedy -= 1  
-        if self.speedy < -1:
-             self.flying = True 
-        self.check()   
         self.animate()
         self.frame += 1
     
@@ -218,15 +245,7 @@ class Stickman(Sprite):
             self.switchcostume(-5 + 2 * right + down)
         else:
             self.switchcostume(self.frame % 15 + 15 * right)
-    
-    def check(self):
-        while self.collide() or self.y > H - 15:
-            self.speedy = 0
-            self.flying = False
-            self.y -= 1
-        self.canvas.coords(self.obj, self.x, self.y)
 
-    
     def collide(self):
         for sprite in self.game.sprites:
             if type(sprite) is Stickman:
