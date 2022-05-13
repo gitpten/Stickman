@@ -52,8 +52,8 @@ class Game:
             pp.insert(0, Door(pp[-1], False))
         return pp
     
-    def newlevel(self, level = -1):
-        self.level = self.level + 1 if level == -1 else level
+    def newlevel(self, level = None):
+        self.level = self.level + 1 if level == None else level
         if self.level == 3:
             self.gameover()
             return
@@ -137,9 +137,10 @@ class Door(Sprite):
         self.canvas.itemconfig(self.obj, image = self.img_opened if self.opened else self.img_closed)
 
     def collide_action(self):
-        self.game.newlevel()
-        return True
-
+        if self.opened:
+            self.game.newlevel()
+            return False
+        return False
 
 class Stickman(Sprite):
     def __init__(self, g: Game, x = W / 2, y = H / 2, speedx=0, speedy=0) -> None:
