@@ -83,6 +83,9 @@ class Sprite:
         self.x += self.speedx
         self.y -= self.speedy
         self.canvas.coords(self.obj, self.x, self.y)
+    
+    def collide_action(self):
+        return True
 
 
 
@@ -101,7 +104,10 @@ class PlathformKiller(Plathform):
         super().__init__(g, x, y, speedx, speedy, width)
         self.img = PhotoImage(file=f"P{width} green.png")
         self.canvas.itemconfig(self.obj, image = self.img)
-
+    
+    def collide_action(self):
+        self.game.sprites[-1].kill()
+        return True
 
 
 class Key(Sprite):
@@ -111,6 +117,10 @@ class Key(Sprite):
         self.obj = self.canvas.create_image(self.x, self.y, image = self.img, anchor='s')
         self.width = 30        
 
+    def collide_action(self):
+        self.game.sprites[0].opened = True
+        self.canvas.itemconfig(self.obj, state='hidden')
+        return True
 
 
 class Door(Sprite):
@@ -126,7 +136,9 @@ class Door(Sprite):
         super().update()
         self.canvas.itemconfig(self.obj, image = self.img_opened if self.opened else self.img_closed)
 
-
+    def collide_action(self):
+        self.game.newlevel()
+        return True
 
 
 class Stickman(Sprite):
@@ -207,17 +219,6 @@ class Stickman(Sprite):
             self.switchcostume(self.frame % 15 + 15 * right)
     
     def check(self):
-        sprite = self.collide()
-        if type(sprite) is Door:
-            if(sprite.opened):
-                self.game.newlevel()
-                return
-        if type(sprite) is Key:
-            self.game.sprites[0].opened = True
-            self.canvas.itemconfig(sprite.obj, state='hidden')
-        if type(sprite) is PlathformKiller:
-            self.kill()
-            return
         while self.collide() or self.y > H - 15:
             self.speedy = 0
             self.flying = False
@@ -227,14 +228,14 @@ class Stickman(Sprite):
     
     def collide(self):
         for sprite in self.game.sprites:
-            if sprite == self:
+            if type(sprite) is Stickman:
                 continue
             mytop = self.y - 15
             mybottom = self.y + 15
             left = sprite.x - sprite.width / 2
             right = sprite.x + sprite.width / 2
             if self.speedy <= 0 and mytop < sprite.y < mybottom and left < self.x < right:
-                return sprite
+                return sprite.collide_action()
         return False
     
     def kill(self):
