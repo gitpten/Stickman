@@ -36,7 +36,8 @@ class Game:
     def get_plathforms(self):
         pp = []
         if self.level == 1:
-            pp.append(Plathform(self, 2, 8))
+            pp.append(ZeroPlathform(self))
+            pp.append(Plathform(self, 5, 8))
             pp.append(Plathform(self, 8, 7))
             pp.append(Plathform(self, 4, 5, width=2))
             pp.append(Plathform(self, 7, 4, width=2))
@@ -44,6 +45,7 @@ class Game:
             pp.insert(0, Door(pp[-1]))
         elif self.level == 2:
             pp.append(Bug(self))
+            pp.append(ZeroPlathform(self))
             pp.append(Plathform(self, 8, 4, width=2))
             pp.append(PlathformKiller(self, 7, 8))
             pp.append(Plathform(self, 3, 2, width=3))
@@ -66,13 +68,23 @@ class Game:
         self.run = False
         self.canvas.create_text(W / 2, H / 2, font = ('Arial', 30), text = 'Game over', \
             anchor='center')
+    
+    def iscollision(self, sprite1, sprite2):
+        if sprite1 is sprite2:
+            return False
+        l1, r1, t1, b1 = sprite1.dimensions()
+        l2, r2, t2, b2 = sprite2.dimensions()
+
+        return not(l2 > r1 or l1 > r2 or t1 > b2 or t2 > b1)
+
 
 
 
 class Sprite:
-    def __init__(self, g: Game, x = W / 2, y = H / 2, speedx = 0, speedy = 0, width = 30) -> None:
+    def __init__(self, g: Game, x = W / 2, y = H / 2, speedx = 0, speedy = 0, width = 30, height = 0) -> None:
         self.game = g
         self.width = width
+        self.height = height
         self.canvas = g.canvas
         self.x, self.y = x, y
         self.speedx, self.speedy = speedx, speedy
@@ -86,14 +98,18 @@ class Sprite:
         self.y -= self.speedy
         self.canvas.coords(self.obj, self.x, self.y)
     
-    def collide_action(self):
-        return True
+    def dimensions(self):
+        return self.x - self.width / 2, self.x + self.width / 2, \
+            self.y - self.height / 2, self.y + self.height / 2
+    
+    def collide_action(self, sprite):
+        pass
 
 
 
 class FallingSprite(Sprite):
-    def __init__(self, g: Game, x = W / 2, y = H / 2, speedx=0, speedy=0) -> None:
-        super().__init__(g, x, y, speedx, speedy)
+    def __init__(self, g: Game, x = W / 2, y = H / 2, speedx=0, speedy=0, width = 30, height=0) -> None:
+        super().__init__(g, x, y, speedx, speedy, width, height)
         self.flying = True
 
     def update(self):
@@ -104,23 +120,12 @@ class FallingSprite(Sprite):
         self.check()  
     
     def check(self):
-        while self.collide() or self.y > H - 15:
-            self.speedy = 0
-            self.flying = False
-            self.y -= 1
-        self.canvas.coords(self.obj, self.x, self.y) 
+        if self.speedy <=0:
+            for sprite in self.game.sprites:
+                if self.game.iscollision(self, sprite):
+                    sprite.collide_action(self)
 
-    def collide(self):
-        for sprite in self.game.sprites:
-            if sprite == self:
-                continue
-            mytop = self.y - 15
-            mybottom = self.y + 15
-            left = sprite.x - sprite.width / 2
-            right = sprite.x + sprite.width / 2
-            if self.speedy <= 0 and mytop < sprite.y < mybottom and left < self.x < right:
-                return sprite 
-        return False
+
 
 
 class Plathform(Sprite):
@@ -129,8 +134,21 @@ class Plathform(Sprite):
         self.img = PhotoImage(file=f"P{width}.png")
         self.obj = self.canvas.create_image(self.x, self.y, image = self.img, anchor='center')
         self.width = width * 30
+    
+    def collide_action(self, collider):
+        if not isinstance(collider, FallingSprite):
+            return
+        while self.game.iscollision(collider, self):
+            collider.speedy = 0
+            collider.flying = False
+            collider.y -= 1
+        self.canvas.coords(collider.obj, collider.x, collider.y) 
 
-
+class ZeroPlathform(Plathform):
+    def __init__(self, g: Game) -> None:
+        super().__init__(g, 5, 10)
+        self.width = W
+        self.canvas.itemconfig(self.obj, state='hidden')
 
     
 class PlathformKiller(Plathform):
@@ -139,58 +157,56 @@ class PlathformKiller(Plathform):
         self.img = PhotoImage(file=f"P{width} green.png")
         self.canvas.itemconfig(self.obj, image = self.img)
     
-    def collide_action(self):
-        self.game.sprites[-1].kill()
-        return True
+    def collide_action(self, collider):
+        if isinstance(collider, Stickman):
+            collider.kill()
 
 
 class Key(Sprite):
     def __init__(self, p: Plathform, opened = True) -> None:
-        super().__init__(p.game, p.x, p.y, 0, 0)
+        super().__init__(p.game, p.x, p.y, 0, 0, 30, 20)
         self.img = PhotoImage(file=f"key.png")
         self.obj = self.canvas.create_image(self.x, self.y, image = self.img, anchor='s')
-        self.width = 30        
 
-    def collide_action(self):
+    def collide_action(self, collider):
+        if not isinstance(collider, Stickman):
+            return
         self.game.sprites[0].opened = True
         self.canvas.itemconfig(self.obj, state='hidden')
-        return True
 
 
 class Door(Sprite):
     def __init__(self, p: Plathform, opened = True) -> None:
-        super().__init__(p.game, p.x, p.y, 0, 0)
+        super().__init__(p.game, p.x, p.y, 0, 0, 30, 2)
         self.img_opened = PhotoImage(file=f"door2.png")
         self.img_closed = PhotoImage(file=f"door1.png")
         self.obj = self.canvas.create_image(self.x, self.y, image = self.img_opened, anchor='s')
         self.opened = opened
-        self.width = 30
     
     def update(self):
         super().update()
         self.canvas.itemconfig(self.obj, image = self.img_opened if self.opened else self.img_closed)
 
-    def collide_action(self):
-        if self.opened:
+    def collide_action(self, collider):
+        if isinstance(collider, Stickman) and self.opened:
             self.game.newlevel()
-            return False
-        return False
 
 
 
 class Bug(FallingSprite):
     def __init__(self, g: Game, x=W - 20, y=20, speedx=-5, speedy=0) -> None:
-        super().__init__(g, x, y, speedx, speedy)
+        super().__init__(g, x, y, speedx, speedy, 30, 30)
         self.img = PhotoImage(file=f"bug.png")
         self.obj = self.canvas.create_image(self.x, self.y, image = self.img, anchor='center')
     
-    def collide_action(self):
-        self.game.sprites[-1].kill()
+    def collide_action(self, collider):
+        if isinstance(collider, Stickman):
+            collider.kill()
 
 
 class Stickman(FallingSprite):
     def __init__(self, g: Game, x = W / 2, y = H / 2, speedx=0, speedy=0) -> None:
-        super().__init__(g, x, y, speedx, speedy)
+        super().__init__(g, x, y, speedx, speedy, 30, 30)
         self.costumes = self.get_costumes()
         self.frame = 0
         self.obj = self.canvas.create_image(self.x, self.y, image = self.costumes[-1], anchor='center')
@@ -258,15 +274,6 @@ class Stickman(FallingSprite):
             self.switchcostume(-5 + 2 * right + down)
         else:
             self.switchcostume(self.frame % 15 + 15 * right)
-
-    def collide(self):
-        sprite = super().collide()
-        if sprite:
-            return sprite.collide_action()
-        return False
-    
-    def collide_action(self):
-        return False
     
     def kill(self):
         self.switchcostume(-6)
