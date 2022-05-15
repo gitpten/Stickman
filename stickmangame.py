@@ -1,4 +1,3 @@
-from email.mime import image
 from time import sleep
 from tkinter import Canvas, PhotoImage, Tk, mainloop
 
@@ -52,6 +51,7 @@ class Game:
             pp.append(PlathformKiller(self, 4, 7, width=2))
             pp.append(Plathform(self, 1, 2))                
             pp.insert(0, Door(pp[-1], False))
+            pp.append(Bug(self, W - 20, 20))
         return pp
     
     def gameover(self):
@@ -104,8 +104,9 @@ class Plathform(Sprite):
         self.obj = self.canvas.create_image(self.x, self.y, image = self.img, anchor='center')
     
     def collide_action(self, collider):
-        if not isinstance(collider, Stickman):
+        if not isinstance(collider, FallingSprite):
             return
+
         while self.game.iscollision(collider, self):
             collider.speedy = 0
             collider.flying = False
@@ -126,7 +127,8 @@ class PlathformKiller(Plathform):
         self.canvas.itemconfig(self.obj, image = self.img)
     
     def collide_action(self, collider):
-        collider.kill()
+        if isinstance(collider, Stickman):
+            collider.kill()
 
 
 
@@ -144,7 +146,7 @@ class Door(Sprite):
         self.canvas.itemconfig(self.obj, image = self.img_opened if self.opened else self.img_closed)
     
     def collide_action(self, collider):
-        if self.opened:
+        if self.opened and isinstance(collider, Stickman):
             self.game.newlevel()
 
 
@@ -158,18 +160,52 @@ class Key(Sprite):
         self.width = 30
     
     def collide_action(self, collider):
-        self.game.sprites[0].opened = True
-        self.canvas.itemconfig(self.obj, state='hidden')
+        if isinstance(collider, Stickman):
+            self.game.sprites[0].opened = True
+            self.canvas.itemconfig(self.obj, state='hidden')
 
 
 
 
-class Stickman(Sprite):
+class FallingSprite(Sprite):
+    def __init__(self, g: Game, x, y, speedx=0, speedy=0, width=30, height=0) -> None:
+        super().__init__(g, x, y, speedx, speedy, width, height)
+        self.flying = True   
+
+    def update(self):
+        super().update()
+        if self.speedy < 0:
+            self.flying = True 
+        self.speedy -= 1   
+        self.check()   
+
+    def check(self):
+        if self.speedy <= 0:
+            for sprite in self.game.sprites:
+                if self.game.iscollision(self, sprite):           
+                    sprite.collide_action(self)
+
+
+
+
+class Bug(FallingSprite):
+    def __init__(self, g: Game, x, y, speedx=-3, speedy=0, width=30, height=30) -> None:
+        super().__init__(g, x, y, speedx, speedy, width, height)
+        self.img = PhotoImage(file=f"bug.png")
+        self.obj = self.canvas.create_image(self.x, self.y, image = self.img, anchor='center') 
+
+    def collide_action(self, collider):
+        if isinstance(collider, Stickman):
+            collider.kill() 
+
+
+
+
+class Stickman(FallingSprite):
     def __init__(self, g: Game, x = W / 2, y = H / 2, speedx=0, speedy=0) -> None:
         super().__init__(g, x, y, 0, 0, 30, 30)
         self.costumes = self.get_costumes()
         self.frame = 0
-        self.flying = True
         self.obj = self.canvas.create_image(self.x, self.y, image = self.costumes[-1], anchor='center')
         self.canvas.bind_all("<KeyPress>", self.force)
         self.canvas.bind_all("<KeyRelease>", self.unforce)
@@ -221,11 +257,7 @@ class Stickman(Sprite):
         self.canvas.itemconfig(self.obj, image = self.costumes[num]) 
 
     def update(self):
-        super().update() 
-        if self.speedy < 0:
-            self.flying = True 
-        self.speedy -= 1   
-        self.check()   
+        super().update()         
         self.animate()
         self.frame += 1
     
@@ -240,30 +272,12 @@ class Stickman(Sprite):
             self.switchcostume(-5 + 2 * right + down)
         else:
             self.switchcostume(self.frame % 15 + 15 * right)
-    
-    def check(self):
-        if self.speedy <= 0:
-            for sprite in self.game.sprites:
-                if self.game.iscollision(self, sprite):
-                    sprite.collide_action(self)
 
     def kill(self):
         self.switchcostume(-6)
         self.canvas.update()
         sleep(1)
         self.game.newlevel(1)
-    
-    def collide(self):
-        for sprite in self.game.sprites:
-            if sprite == self:
-                continue
-            mytop = self.y - 15
-            mybottom = self.y + 15
-            left = sprite.x - sprite.width / 2
-            right = sprite.x + sprite.width / 2
-            if self.speedy <= 0 and mytop < sprite.y < mybottom and left < self.x < right:
-                return sprite
-        return False
 
 g = Game()
 while g.run:
