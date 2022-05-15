@@ -14,14 +14,16 @@ class Game:
         self.run = True
         self.sprites = self.get_plathforms() + [Stickman(self)]
     
-    def newlevel(self):
-        if self.level == 2:
+    def newlevel(self, level = 0):
+        if level == 0:
+            level = self.level + 1
+        if level == 3:
             self.gameover()
             return
         self.canvas.delete('all')
-        self.level += 1
+        self.level = level
         self.stickman = Stickman(self)
-        self.sprites = self.get_platforms() + [self.stickman]
+        self.sprites = self.get_plathforms() + [self.stickman]
     
     
     def tick(self):
@@ -42,18 +44,10 @@ class Game:
             pp.append(Plathform(self, 8, 4, width=2))
             pp.append(Plathform(self, 7, 8))
             pp.append(Plathform(self, 3, 2, width=3))
-            pp.append(Plathform(self, 4, 7, width=2))
+            pp.append(PlathformKiller(self, 4, 7, width=2))
             pp.append(Plathform(self, 1, 2))                
         pp.insert(0, Door(pp[-1]))
         return pp
-    
-    def newlevel(self):
-        if self.level == 2:
-            self.gameover()
-            return
-        self.level += 1
-        self.canvas.delete('all')
-        self.sprites = self.get_plathforms() + [Stickman(self)]
     
     def gameover(self):
         self.run = False
@@ -86,6 +80,14 @@ class Plathform(Sprite):
         self.img = PhotoImage(file=f"P{width}.png")
         self.obj = self.canvas.create_image(self.x, self.y, image = self.img, anchor='center')
         self.width = width * 30
+
+
+
+class PlathformKiller(Plathform):
+    def __init__(self, g: Game, x, y, speedx=0, speedy=0, width=1) -> None:
+        super().__init__(g, x, y, speedx, speedy, width)
+        self.img = PhotoImage(file=f"P{width} green.png")
+        self.canvas.itemconfig(self.obj, image = self.img)
 
 
 
@@ -125,6 +127,7 @@ class Stickman(Sprite):
             imgs.append(PhotoImage(file=f"L{i + 1}.png"))
         for i in range(15):
             imgs.append(PhotoImage(file=f"R{i + 1}.png"))
+        imgs.append(PhotoImage(file=f"dead.png"))
         imgs.append(PhotoImage(file=f"LJ1.png"))
         imgs.append(PhotoImage(file=f"LJ2.png"))
         imgs.append(PhotoImage(file=f"RJ1.png"))
@@ -156,7 +159,9 @@ class Stickman(Sprite):
         self.canvas.itemconfig(self.obj, image = self.costumes[num]) 
 
     def update(self):
-        super().update()  
+        super().update() 
+        if self.speedy < 0:
+            self.flying = True 
         self.speedy -= 1   
         self.check()   
         self.animate()
@@ -175,8 +180,12 @@ class Stickman(Sprite):
             self.switchcostume(self.frame % 15 + 15 * right)
     
     def check(self):
-        if type(self.collide()) is Door:
+        sprite = self.collide()
+        if type(sprite) is Door:
             self.game.newlevel()
+            return
+        if type(sprite) is PlathformKiller:
+            self.kill()
             return
         while self.collide() or self.y > H - 15:
             self.speedy = 0
@@ -184,6 +193,11 @@ class Stickman(Sprite):
             self.y -= 1
         self.canvas.coords(self.obj, self.x, self.y)
 
+    def kill(self):
+        self.switchcostume(-6)
+        self.canvas.update()
+        sleep(1)
+        self.game.newlevel(1)
     
     def collide(self):
         for sprite in self.game.sprites:
