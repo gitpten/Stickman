@@ -1,3 +1,4 @@
+from email.mime import image
 from time import sleep
 from tkinter import Canvas, PhotoImage, Tk, mainloop
 
@@ -40,13 +41,15 @@ class Game:
             pp.append(Plathform(self, 4, 5, width=2))
             pp.append(Plathform(self, 7, 4, width=2))
             pp.append(Plathform(self, 2, 2, width=3))
+            pp.insert(0, Door(pp[-1]))
         elif self.level == 2:
             pp.append(Plathform(self, 8, 4, width=2))
+            pp.insert(-1, Key(pp[-1]))
             pp.append(Plathform(self, 7, 8))
             pp.append(Plathform(self, 3, 2, width=3))
             pp.append(PlathformKiller(self, 4, 7, width=2))
             pp.append(Plathform(self, 1, 2))                
-        pp.insert(0, Door(pp[-1]))
+            pp.insert(0, Door(pp[-1], False))
         return pp
     
     def gameover(self):
@@ -92,11 +95,26 @@ class PlathformKiller(Plathform):
 
 
 class Door(Sprite):
-    def __init__(self, p: Plathform) -> None:
+    def __init__(self, p: Plathform, open = True) -> None:
         super().__init__(p.game, p.x, p.y, 0, 0)
+        self.opened = open
         self.img_opened = PhotoImage(file=f"door2.png")
         self.img_closed = PhotoImage(file=f"door1.png")
-        self.obj = self.canvas.create_image(self.x, self.y, image = self.img_opened, anchor='s')
+        self.obj = self.canvas.create_image(self.x, self.y, anchor='s')
+        self.width = 30
+    
+    def update(self):
+        super().update()
+        self.canvas.itemconfig(self.obj, image = self.img_opened if self.opened else self.img_closed)
+
+
+
+
+class Key(Sprite):
+    def __init__(self, p: Plathform) -> None:
+        super().__init__(g, p.x, p.y, 0, 0)
+        self.img = PhotoImage(file=f"key.png")
+        self.obj = self.canvas.create_image(self.x, self.y, image = self.img, anchor='s')
         self.width = 30
 
 
@@ -104,7 +122,7 @@ class Door(Sprite):
 
 class Stickman(Sprite):
     def __init__(self, g: Game, x = W / 2, y = H / 2, speedx=0, speedy=0) -> None:
-        super().__init__(g, x, y, speedx, speedy)
+        super().__init__(g, x, y, 0, 0)
         self.costumes = self.get_costumes()
         self.frame = 0
         self.flying = True
@@ -181,12 +199,15 @@ class Stickman(Sprite):
     
     def check(self):
         sprite = self.collide()
-        if type(sprite) is Door:
+        if type(sprite) is Door and sprite.opened:
             self.game.newlevel()
             return
         if type(sprite) is PlathformKiller:
             self.kill()
             return
+        if type(sprite) is Key:
+            self.game.sprites[0].opened = True
+            self.canvas.itemconfig(sprite.obj, state='hidden')
         while self.collide() or self.y > H - 15:
             self.speedy = 0
             self.flying = False
