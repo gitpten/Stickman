@@ -207,7 +207,7 @@ class Stickman(Sprite):
             return
         if type(sprite) is Key:
             self.game.sprites[0].opened = True
-            self.canvas.itemconfig(sprite.obj, state='hidden')
+            self.canvas.itemconfig(sprite.obj, state='hidden')›
         while self.collide() or self.y > H - 15:
             self.speedy = 0
             self.flying = False
