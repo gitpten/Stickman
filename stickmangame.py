@@ -113,11 +113,14 @@ class Plathform(Sprite):
             collider.y -= 1
         self.canvas.coords(collider.obj, collider.x, collider.y)
 
+
+
 class ZeroPlathform(Plathform):
     def __init__(self, g: Game) -> None:
         super().__init__(g, 5, 10, 0, 0, 1, 0)
         self.width = W
         self.canvas.itemconfig(self.obj, state='hidden')
+        
 
 
 class PlathformKiller(Plathform):
